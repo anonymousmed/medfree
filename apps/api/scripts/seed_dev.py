@@ -131,7 +131,11 @@ BLOCKS = [
 
 
 async def run() -> None:
-    engine = create_async_engine(DATABASE_URL, echo=False)
+    # Reuse the shared pgBouncer-safe connect args (disable asyncpg prepared
+    # statements & use unique names) so seeding works against the Supabase pooler.
+    from app.db.session import _connect_args
+
+    engine = create_async_engine(DATABASE_URL, echo=False, connect_args=_connect_args)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
