@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /auth
+
+# Respect user privacy — never expose student accounts/progress to search engines.
+
+Sitemap: /sitemap.xml

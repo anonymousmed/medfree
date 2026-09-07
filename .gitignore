@@ -1,0 +1,42 @@
+# Dependencies / build artifacts
+node_modules/
+.next/
+dist/
+build/
+.vite/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets (NEVER commit)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Local databases / storage
+*.db
+*.sqlite
+*.sqlite3
+apps/api/medfree.db
+# Local dev object-storage upload root
+/storage/
+/scripts_capture.py
+/screenshots/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

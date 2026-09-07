@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", monospace;
+
+  /* Modern Dark (default) */
+  --surface-0: 10 12 18;
+  --surface-1: 16 19 27;
+  --surface-2: 26 30 41;
+  --surface-3: 36 41 55;
+  --ink-1: 236 239 247;
+  --ink-2: 166 173 187;
+  --ink-3: 109 116 132;
+  --accent: 34 211 238;
+  --accent-soft: 34 211 238;
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+}
+
+[data-theme="light"] {
+  --surface-0: 245 246 249;
+  --surface-1: 255 255 255;
+  --surface-2: 235 238 242;
+  --surface-3: 224 228 234;
+  --ink-1: 17 24 39;
+  --ink-2: 55 65 81;
+  --ink-3: 107 114 128;
+  --accent: 8 145 178;
+  --accent-soft: 94 234 212;
+}
+
+[data-theme="midnight"] {
+  --surface-0: 8 12 22;
+  --surface-1: 13 20 32;
+  --surface-2: 20 30 46;
+  --surface-3: 28 40 60;
+  --accent: 96 165 250;
+  --accent-soft: 96 165 250;
+}
+
+[data-theme="oled"] {
+  --surface-0: 0 0 0;
+  --surface-1: 3 5 8;
+  --surface-2: 12 14 18;
+  --surface-3: 22 25 31;
+  --accent: 34 211 238;
+}
+
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  background-color: rgb(var(--surface-0));
+  color: rgb(var(--ink-1));
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+* {
+  border-color: rgb(var(--surface-2));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbar for the Atlas canvas overlays */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface-3));
+  border-radius: 999px;
+}

@@ -1,0 +1,44 @@
+# Local development parity. The production target is managed cloud
+# (Vercel + Render/Railway + managed PostgreSQL + managed object storage),
+# so this compose file is OPTIONAL and only for local full-stack dev.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: medfree
+      POSTGRES_PASSWORD: medfree
+      POSTGRES_DB: medfree
+    ports:
+      - "5432:5432"
+    volumes:
+      - medfree_pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      AUTH_PROVIDER: mock
+      AUTH_BYPASS: "true"
+      DATABASE_URL: postgresql+asyncpg://medfree:medfree@db:5432/medfree
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+      MEDFREE_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  medfree_pgdata:

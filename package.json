@@ -1,0 +1,20 @@
+{
+  "name": "medfree",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MEDFREE — Human Atlas-first digital medical university (monorepo)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @medfree/web run dev",
+    "build:web": "npm --workspace @medfree/web run build",
+    "dev:api": "cd apps/api && ./.venv/bin/uvicorn app.main:app --reload",
+    "test:api": "cd apps/api && ./.venv/bin/python -m pytest ../../tests -q",
+    "typecheck": "npm --workspace @medfree/web run typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
