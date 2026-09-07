@@ -83,12 +83,21 @@ class S3StorageDriver:
         import boto3  # type: ignore
 
         self.bucket = settings.storage_bucket
+        endpoint = settings.storage_endpoint
+        region = settings.storage_region or "auto"
+        # Supabase's S3-compatible API (endpoint .../storage/v1/s3) requires the
+        # *virtual* region "auto" in the request signature — even though the
+        # bucket physically lives in e.g. ap-southeast-1. Signing with the
+        # physical region makes presigned upload/download URLs fail with
+        # "Missing signature" / AccessDenied (403). Force "auto" for Supabase.
+        if endpoint and "supabase.co" in endpoint:
+            region = "auto"
         self.client = boto3.client(
             "s3",
-            endpoint_url=settings.storage_endpoint,
+            endpoint_url=endpoint,
             aws_access_key_id=settings.storage_access_key,
             aws_secret_access_key=settings.storage_secret_key,
-            region_name=settings.storage_region,
+            region_name=region,
         )
 
     def presign_upload(self, key: str, content_type: str | None = None) -> str:
