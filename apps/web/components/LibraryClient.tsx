@@ -3,15 +3,28 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge, Card } from "@medfree/ui";
-import type { Book } from "@/lib/api";
+import { fetchResources, type Book, type Resource } from "@/lib/api";
 
 const SUBJECTS = ["anatomy", "physiology", "biochemistry"];
+const READABLE = new Set(["book", "pdf", "document", "slides", "article", "notes"]);
 
 export function LibraryClient({ serverBooks }: { serverBooks: Book[] }) {
   const [books, setBooks] = useState<Book[]>(serverBooks);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Load published PDF resources (uploaded by admins) so users can read them
+  // in-browser. Best-effort: the library still renders books if this fails.
+  useEffect(() => {
+    fetchResources().then((r) => {
+      const pdfs = r.filter((x) => READABLE.has(x.resource_type) && x.read_url);
+      setResources(pdfs);
+      setResourcesLoaded(true);
+    }).catch(() => setResourcesLoaded(true));
+  }, []);
 
   const load = useCallback(async (query: string, subj: string) => {
     setLoading(true);
@@ -80,6 +93,32 @@ export function LibraryClient({ serverBooks }: { serverBooks: Book[] }) {
           </Card>
         ))}
       </div>
+
+      {/* Admin-uploaded PDFs — read online, embedded on the site */}
+      {resourcesLoaded && resources.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold">Read online</h2>
+            <Badge color="accent">{resources.length}</Badge>
+            <span className="text-sm text-ink-3">PDFs hosted on MEDFREE — read in-browser, no download or external link.</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {resources.map((r) => (
+              <Card key={r.id} className="h-full transition hover:border-accent/40">
+                <div className="flex items-start justify-between">
+                  <Badge color="neutral">{r.resource_type}</Badge>
+                  {r.rights_status && <Badge color="success">{r.rights_status}</Badge>}
+                </div>
+                <h3 className="mt-3 font-semibold">{r.title}</h3>
+                {r.creator && <p className="mt-1 text-sm text-ink-3">by {r.creator}</p>}
+                <Link href={`/read/${r.id}`} className="mt-3 block text-sm text-accent hover:underline">
+                  Read online →
+                </Link>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,15 +18,54 @@ router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(requir
 
 # Allowed upload extensions by resource type (spec §50: never blindly allow
 # arbitrary executable files).
+#
+# NOTE: the admin upload form (AdminUpload.tsx) offers these resource types:
+#   book, pdf, epub, image, diagram, 3d, video, audio, slides, dataset,
+#   notes, article. Every one of them must resolve to a non-empty allowlist so
+#   an otherwise-valid file (e.g. a PDF book) is never rejected with a confusing
+#   "file type not allowed" error.
 ALLOWED_EXTENSIONS = {
+    # Document-like types (PDF is the ubiquitous "book" format on MEDFREE).
+    "book": {".pdf", ".epub", ".docx", ".md", ".txt"},
+    "pdf": {".pdf"},
+    "epub": {".epub"},
     "document": {".pdf", ".epub", ".docx", ".md", ".txt"},
+    "notes": {".pdf", ".epub", ".docx", ".md", ".txt"},
+    "article": {".pdf", ".docx", ".md", ".txt", ".epub"},
+    # Images / diagrams.
     "image": {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"},
+    "diagram": {".jpg", ".jpeg", ".png", ".webp", ".svg"},
+    # Media.
     "video": {".mp4", ".webm", ".mkv"},
     "audio": {".mp3", ".wav", ".ogg", ".m4a"},
+    # 3D models.
+    "3d": {".glb", ".gltf"},
     "model": {".glb", ".gltf"},
+    # Data.
     "dataset": {".csv", ".json", ".xlsx"},
+    # Slide decks.
     "slides": {".pdf", ".pptx", ".odp"},
 }
+
+
+def guess_content_type(filename: str) -> str:
+    """Best-effort MIME type for a filename (used to store PDFs as
+    ``application/pdf`` so the browser renders them inline instead of
+    downloading them)."""
+    import mimetypes
+
+    ct, _ = mimetypes.guess_type(filename)
+    if ct:
+        return ct
+    ext = os.path.splitext(filename)[1].lower()
+    return {
+        ".pdf": "application/pdf",
+        ".epub": "application/epub+zip",
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+        ".glb": "model/gltf-binary",
+        ".gltf": "model/gltf+json",
+    }.get(ext, "application/octet-stream")
 
 
 def validate_upload_type(filename: str, resource_type: str) -> tuple[bool, str | None]:

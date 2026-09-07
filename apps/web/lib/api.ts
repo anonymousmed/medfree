@@ -26,6 +26,28 @@ export interface SearchResult {
   href?: string;
 }
 
+export interface Resource {
+  id: number;
+  title: string;
+  resource_type: string;
+  creator?: string | null;
+  publisher?: string | null;
+  source_url?: string | null;
+  rights_status: string;
+  review_status: string;
+  visibility: string;
+  local_storage_key?: string | null;
+  read_url?: string | null;
+}
+
+export const fetchResources = () => get<Resource[]>("/resources", []);
+
+export const fetchResource = (id: number) =>
+  get<Resource>(`/resources/${id}`, {
+    id, title: "Resource unavailable", resource_type: "unknown",
+    rights_status: "unknown", review_status: "unknown", visibility: "private",
+  });
+
 /**
  * Thin API client. Each fetcher first tries the FastAPI backend and falls back
  * to bundled mock data so the UI renders standalone.

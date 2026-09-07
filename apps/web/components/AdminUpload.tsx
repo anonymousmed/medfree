@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Badge, Button, Card, SectionHeading } from "@medfree/ui";
 import { useAuth } from "./AuthProvider";
 
-type Presign = { storage_key: string; upload_url: string; expires_in: number };
+type Presign = { storage_key: string; upload_url: string; expires_in: number; content_type?: string };
 
 const RESOURCE_TYPES = ["book", "pdf", "epub", "image", "diagram", "3d", "video", "audio", "slides", "dataset", "notes", "article"];
 
@@ -26,17 +26,29 @@ export function AdminUpload() {
     setMsg(null);
     try {
       const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-      // 1) presign
+      // 1) presign — send the real content type so the object is stored as
+      //    e.g. application/pdf and the browser renders it inline (not download).
       const presignRes = await fetch("/api/storage/presign", {
         method: "POST", headers: h,
-        body: JSON.stringify({ filename: file.name, resource_type: meta.resource_type }),
+        body: JSON.stringify({
+          filename: file.name,
+          resource_type: meta.resource_type,
+          content_type: file.type || undefined,
+        }),
       });
-      if (!presignRes.ok) throw new Error("presign failed (file type may not be allowed)");
+      if (!presignRes.ok) {
+        const b = await presignRes.json().catch(() => ({}));
+        throw new Error(b?.detail ?? "presign failed (file type may not be allowed)");
+      }
       const presign: Presign = await presignRes.json();
 
-      // 2) PUT bytes (local dev uses a local target; S3 uses presigned URL)
+      // 2) PUT bytes (local dev uses a local target; S3 uses presigned URL).
+      //    The URL is signed for the content_type returned; send it back exactly.
       if (!presign.upload_url.startsWith("local://")) {
-        await fetch(presign.upload_url, { method: "PUT", body: file });
+        const putHeaders: Record<string, string> = {};
+        if (presign.content_type) putHeaders["Content-Type"] = presign.content_type;
+        const put = await fetch(presign.upload_url, { method: "PUT", body: file, headers: putHeaders });
+        if (!put.ok) throw new Error(`Upload to storage failed (HTTP ${put.status}).`);
       }
 
       // 3) confirm metadata

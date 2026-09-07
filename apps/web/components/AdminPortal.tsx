@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Badge, Button, Card } from "@medfree/ui";
 import { useAuth } from "./AuthProvider";
 import { AdminInsights } from "./AdminInsights";
@@ -9,7 +10,7 @@ import { AdminUpload } from "./AdminUpload";
 import { AdminContent } from "./AdminContent";
 
 type User = { id: number; email?: string; is_active: boolean; roles: string[] };
-type Res = { id: number; title: string; resource_type: string; rights_status: string; review_status: string; visibility: string; ai_usage_status?: string };
+type Res = { id: number; title: string; resource_type: string; rights_status: string; review_status: string; visibility: string; ai_usage_status?: string; read_url?: string | null };
 type TabKey = "content" | "upload" | "manage" | "insights" | "partners";
 
 export function AdminPortal() {
@@ -140,6 +141,12 @@ export function AdminPortal() {
                 </div>
               </div>
               <div className="flex gap-2">
+                {r.read_url && (
+                  <Link href={`/read/${r.id}`}
+                    className="rounded-xl border border-surface-2 px-3 py-1.5 text-xs font-medium text-ink-2 hover:border-accent/40 hover:text-accent">
+                    Read online
+                  </Link>
+                )}
                 <Button size="sm" onClick={() => decide(r.id, "approve")}>Approve</Button>
                 <Button size="sm" onClick={() => decide(r.id, "reject")} variant="danger">Reject</Button>
                 <Button size="sm" onClick={() => decide(r.id, "publish")} variant="secondary">Publish</Button>

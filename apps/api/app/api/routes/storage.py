@@ -27,7 +27,7 @@ from app.core.storage import get_storage, new_storage_key
 from app.db.session import get_session
 from app.models.content import License, Resource
 from app.schemas.resource import ResourceRead
-from app.api.routes.security import validate_upload_type
+from app.api.routes.security import guess_content_type, validate_upload_type
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -39,6 +39,7 @@ class PresignRequest(BaseModel):
     filename: str = Field(..., min_length=1, max_length=200)
     resource_type: str = Field(..., min_length=1, max_length=60)
     size_bytes: int | None = Field(default=None, ge=0)
+    content_type: str | None = Field(default=None, max_length=120)
 
 
 class ConfirmUpload(BaseModel):
@@ -69,8 +70,14 @@ async def presign(payload: PresignRequest):
         raise HTTPException(status_code=413, detail=f"File exceeds {settings.max_upload_mb} MB limit")
     storage = get_storage()
     key = new_storage_key(payload.resource_type, payload.filename)
-    upload_url = storage.presign_upload(key)
-    return {"storage_key": key, "upload_url": upload_url, "expires_in": 3600}
+    # Critical for in-browser reading: a PDF must be stored as
+    # ``application/pdf`` (not the octet-stream default) so browsers render it
+    # inline instead of forcing a download. Prefer the client-supplied type,
+    # otherwise derive it from the filename; surface it back so the client PUTs
+    # the exact same Content-Type the URL was signed with.
+    content_type = payload.content_type or guess_content_type(payload.filename)
+    upload_url = storage.presign_upload(key, content_type=content_type)
+    return {"storage_key": key, "upload_url": upload_url, "expires_in": 3600, "content_type": content_type}
 
 
 @router.post(

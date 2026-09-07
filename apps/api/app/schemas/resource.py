@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 class ResourceRead(BaseModel):
@@ -14,6 +14,21 @@ class ResourceRead(BaseModel):
     ai_usage_status: str
     review_status: str
     visibility: str
+    local_storage_key: str | None = None
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def read_url(self) -> str | None:
+        """Stable in-browser URL for a public, published resource (e.g. a PDF
+        that the browser renders inline). Only exposed when the resource is
+        actually public + published, matching the storage-access gate."""
+        if not self.local_storage_key:
+            return None
+        if self.visibility != "public" or self.review_status != "published":
+            return None
+        from app.core.storage import get_storage
+
+        return get_storage().get_public_url(self.local_storage_key)
 
 
 class ResourceUploadRequest(BaseModel):
