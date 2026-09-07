@@ -48,6 +48,31 @@ export const fetchResource = (id: number) =>
     rights_status: "unknown", review_status: "unknown", visibility: "private",
   });
 
+export interface ProgressOverview {
+  streak: number;
+  longest_streak: number;
+  xp: number;
+  level: number;
+  quiz_attempts: number;
+  quiz_correct: number;
+  quiz_accuracy: number;
+  viva_attempts: number;
+  topics_started: number;
+  topics_completed: number;
+  flashcards_due: number;
+  time_on_site_seconds: number;
+  reading_seconds: number;
+  subject_mastery: {
+    subject_slug: string;
+    attempts: number;
+    correct: number;
+    accuracy: number;
+  }[];
+  weak_areas: { topic_slug: string; accuracy?: number | null; mastery?: number | null; note: string }[];
+}
+
+export const fetchProgressOverview = () => get<ProgressOverview | null>("/progress/overview", null);
+
 /**
  * Thin API client. Each fetcher first tries the FastAPI backend and falls back
  * to bundled mock data so the UI renders standalone.

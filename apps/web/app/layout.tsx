@@ -3,6 +3,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ActivityTracker } from "@/components/ActivityTracker";
 import { PRODUCT_TAGLINE } from "@medfree/config";
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>
+            <ActivityTracker />
           </AuthProvider>
         </ThemeProvider>
         {/* Register the service worker for PWA/offline support (Step 18). */}

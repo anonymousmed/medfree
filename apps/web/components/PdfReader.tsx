@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card } from "@medfree/ui";
+import { useAuth } from "./AuthProvider";
 import { fetchResource, type Resource } from "@/lib/api";
 
 /**
@@ -19,6 +20,8 @@ import { fetchResource, type Resource } from "@/lib/api";
  */
 export function PdfReader({ resourceId }: { resourceId: number }) {
   const router = useRouter();
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [resource, setResource] = useState<Resource | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,25 @@ export function PdfReader({ resourceId }: { resourceId: number }) {
       alive = false;
     };
   }, [resourceId]);
+
+  // Record real reading time on MEDFREE (not external storage).
+  useEffect(() => {
+    if (!token) return;
+    const send = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetch("/api/progress/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ kind: "reading", seconds: 30, resource_id: resourceId, path: `/read/${resourceId}` }),
+      }).catch(() => {});
+    };
+    const first = setTimeout(send, 5000);
+    const id = setInterval(send, 30000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, [token, resourceId]);
 
   if (loading) {
     return (

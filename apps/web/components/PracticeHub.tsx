@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card, ProgressBar } from "@medfree/ui";
+import { useAuth } from "./AuthProvider";
 
 type Question = {
   id: number; stem: string; difficulty: string; qtype: string;
@@ -10,6 +11,8 @@ type Question = {
 type Viva = { id: number; prompt: string; difficulty: string };
 
 export function PracticeHub() {
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [viva, setViva] = useState<Viva[]>([]);
   const [qIndex, setQIndex] = useState(0);
@@ -30,11 +33,11 @@ export function PracticeHub() {
     if (selectedOption == null || !questions[qIndex]) return;
     const res = await fetch(`/api/questions/${questions[qIndex].id}/attempt`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ selected_option_id: selectedOption }),
     });
     setResult(await res.json());
-  }, [selectedOption, qIndex, questions]);
+  }, [selectedOption, qIndex, questions, token]);
 
   const nextQuestion = () => {
     setResult(null);
@@ -52,7 +55,7 @@ export function PracticeHub() {
     if (!viva[vivaIndex]) return;
     const res = await fetch(`/api/viva/${viva[vivaIndex].id}/attempt`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ student_answer: vivaAnswer, self_rating: 3 }),
     });
     setVivaReveal(await res.json());
