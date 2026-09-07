@@ -47,6 +47,7 @@ class ConfirmUpload(BaseModel):
     filename: str = Field(..., min_length=1, max_length=200)
     resource_type: str = Field(..., min_length=1, max_length=60)
     title: str = Field(..., min_length=1, max_length=300)
+    size_bytes: int | None = Field(default=None, ge=0)
     creator: str | None = None
     publisher: str | None = None
     source_url: str | None = None
