@@ -34,6 +34,9 @@ async def global_search(
         return []
     needle = f"%{q.strip()}%"
     results: list[SearchResult] = []
+    # Postgres is strict about boolean == integer; bind a real boolean so the
+    # query works on both Postgres and SQLite (which coerces 1<->true).
+    published = True
 
     # 1. Atlas structures (centerpiece comes first)
     structs = (
@@ -63,9 +66,9 @@ async def global_search(
             text(
                 "SELECT t.id, t.slug, t.title, s.slug AS subject_slug FROM topics t "
                 "JOIN subjects s ON s.id = t.subject_id "
-                "WHERE t.title LIKE :n AND t.is_published = 1 ORDER BY t.title LIMIT 6"
+                "WHERE t.title LIKE :n AND t.is_published = :pub ORDER BY t.title LIMIT 6"
             ),
-            {"n": needle},
+            {"n": needle, "pub": published},
         )
     ).all()
     for t in topics:
@@ -112,8 +115,8 @@ async def global_search(
     # 5. Questions
     questions = (
         await session.execute(
-            text("SELECT id, stem FROM questions WHERE stem LIKE :n AND is_published=1 ORDER BY stem LIMIT 5"),
-            {"n": needle},
+            text("SELECT id, stem FROM questions WHERE stem LIKE :n AND is_published = :pub ORDER BY stem LIMIT 5"),
+            {"n": needle, "pub": published},
         )
     ).all()
     for qq in questions:
@@ -122,8 +125,8 @@ async def global_search(
     # 6. Viva
     viva = (
         await session.execute(
-            text("SELECT id, prompt FROM viva_questions WHERE prompt LIKE :n AND is_published=1 ORDER BY prompt LIMIT 4"),
-            {"n": needle},
+            text("SELECT id, prompt FROM viva_questions WHERE prompt LIKE :n AND is_published = :pub ORDER BY prompt LIMIT 4"),
+            {"n": needle, "pub": published},
         )
     ).all()
     for vv in viva:
