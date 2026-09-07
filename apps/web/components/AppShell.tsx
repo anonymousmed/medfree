@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { NAV_ITEMS } from "@medfree/config";
 import { useTheme, type Theme } from "./ThemeProvider";
 import { useAuth } from "./AuthProvider";
+import { TimeOnSiteTimer } from "./TimeOnSiteTimer";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
@@ -137,6 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <ThemeSwitcher />
+          <TimeOnSiteTimer compact />
           {session ? (
             <div className="flex items-center gap-2">
               <span className="hidden rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-ink-2 sm:inline">
@@ -182,12 +184,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-8 rounded-xl bg-surface-1 p-4">
-            <p className="text-xs font-semibold text-ink-3">TODAY'S TARGET</p>
-            <p className="mt-1 text-2xl font-semibold text-ink-1">45 min</p>
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-              <div className="h-full w-1/3 rounded-full bg-accent" />
-            </div>
+          <div className="mt-8">
+            <TimeOnSiteTimer />
           </div>
         </aside>
 
