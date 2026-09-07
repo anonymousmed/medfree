@@ -32,7 +32,7 @@ async def global_search(
 ):
     if not q:
         return []
-    needle = f"%{q.strip()}%"
+    needle = f"%{q.strip().lower()}%"
     results: list[SearchResult] = []
     # Postgres is strict about boolean == integer; bind a real boolean so the
     # query works on both Postgres and SQLite (which coerces 1<->true).
@@ -43,7 +43,7 @@ async def global_search(
         await session.execute(
             text(
                 "SELECT id, preferred_name, latin_name FROM anatomical_structures "
-                "WHERE preferred_name LIKE :n OR COALESCE(synonyms,'') LIKE :n "
+                "WHERE lower(preferred_name) LIKE :n OR lower(COALESCE(synonyms,'')) LIKE :n "
                 "ORDER BY preferred_name LIMIT 8"
             ),
             {"n": needle},
@@ -66,7 +66,7 @@ async def global_search(
             text(
                 "SELECT t.id, t.slug, t.title, s.slug AS subject_slug FROM topics t "
                 "JOIN subjects s ON s.id = t.subject_id "
-                "WHERE t.title LIKE :n AND t.is_published = :pub ORDER BY t.title LIMIT 6"
+                "WHERE lower(t.title) LIKE :n AND t.is_published = :pub ORDER BY t.title LIMIT 6"
             ),
             {"n": needle, "pub": published},
         )
@@ -85,7 +85,7 @@ async def global_search(
     # 3. Books (knowledge/reference layer)
     books = (
         await session.execute(
-            text("SELECT id, title FROM books WHERE title LIKE :n ORDER BY title LIMIT 5"),
+            text("SELECT id, title FROM books WHERE lower(title) LIKE :n ORDER BY title LIMIT 5"),
             {"n": needle},
         )
     ).all()
@@ -101,7 +101,7 @@ async def global_search(
         await session.execute(
             text(
                 "SELECT id, title, resource_type FROM resources "
-                "WHERE title LIKE :n AND review_status='published' AND visibility='public' "
+                "WHERE lower(title) LIKE :n AND review_status='published' AND visibility='public' "
                 "ORDER BY title LIMIT 5"
             ),
             {"n": needle},
@@ -115,7 +115,7 @@ async def global_search(
     # 5. Questions
     questions = (
         await session.execute(
-            text("SELECT id, stem FROM questions WHERE stem LIKE :n AND is_published = :pub ORDER BY stem LIMIT 5"),
+            text("SELECT id, stem FROM questions WHERE lower(stem) LIKE :n AND is_published = :pub ORDER BY stem LIMIT 5"),
             {"n": needle, "pub": published},
         )
     ).all()
@@ -125,7 +125,7 @@ async def global_search(
     # 6. Viva
     viva = (
         await session.execute(
-            text("SELECT id, prompt FROM viva_questions WHERE prompt LIKE :n AND is_published = :pub ORDER BY prompt LIMIT 4"),
+            text("SELECT id, prompt FROM viva_questions WHERE lower(prompt) LIKE :n AND is_published = :pub ORDER BY prompt LIMIT 4"),
             {"n": needle, "pub": published},
         )
     ).all()
