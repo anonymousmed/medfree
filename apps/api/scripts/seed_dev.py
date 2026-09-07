@@ -48,7 +48,11 @@ import app.models  # noqa: F401
 from scripts.seed_content import seed_content_pack
 from scripts.library_pack import seed_library_pack
 
-DATABASE_URL = "sqlite+aiosqlite:///./medfree.db"
+# Use the configured DB (honors DATABASE_URL) so this seeds the real Postgres
+# in production, defaulting to the local SQLite only when no DB is configured.
+from app.core.config import settings
+
+DATABASE_URL = settings.database_url or "sqlite+aiosqlite:///./medfree.db"
 
 REGIONS = [
     ("upper-limb", "Upper Limb"),
