@@ -50,9 +50,14 @@ async def run_async_migrations() -> None:
     # "DuplicatePreparedStatementError". Disable those caches when asyncpg.
     _extra_kwargs = {}
     if (settings.database_url or "").startswith("postgresql+asyncpg://"):
+        from uuid import uuid4
+
         _extra_kwargs["connect_args"] = {
             "statement_cache_size": 0,
             "prepared_statement_cache_size": 0,
+            # SQLAlchemy asyncpg dialect: unique prepared-statement names so
+            # pgBouncer never reuses a name it retained on the backend session.
+            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4().hex}__",
         }
     connectable = async_engine_from_config(
         _conf,

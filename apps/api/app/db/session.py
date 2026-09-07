@@ -10,9 +10,17 @@ from app.core.config import settings
 # Supabase's managed pooler is pgBouncer in transaction mode, which does NOT
 # support asyncpg's server-side prepared statements (they collide across
 # multiplexed sessions -> "DuplicatePreparedStatementError"). Disable the
-# asyncpg statement/prepared-statement caches for pooled/transaction pooling.
+# asyncpg statement cache AND give every prepared statement a unique name so
+# SQLAlchemy's asyncpg dialect never reuses a name retained by pgBouncer.
+from uuid import uuid4
+
 _connect_args = (
-    {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
+    {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        # SQLAlchemy asyncpg dialect: unique prepared-statement names.
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4().hex}__",
+    }
     if (settings.database_url or "").startswith("postgresql+asyncpg://")
     else {}
 )
