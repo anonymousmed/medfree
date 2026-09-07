@@ -48,14 +48,17 @@ async def run_async_migrations() -> None:
     # Supabase's managed pooler is pgBouncer (transaction mode), which does not
     # support asyncpg's server-side prepared statements -> they collide with
     # "DuplicatePreparedStatementError". Disable those caches when asyncpg.
+    _extra_kwargs = {}
     if (settings.database_url or "").startswith("postgresql+asyncpg://"):
-        _conf.setdefault("connect_args", {}).update(
-            {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
-        )
+        _extra_kwargs["connect_args"] = {
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+        }
     connectable = async_engine_from_config(
         _conf,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        **_extra_kwargs,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
