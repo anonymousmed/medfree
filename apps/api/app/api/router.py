@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     admin,
     admin_content,
+    admin_library,
     ai,
     analytics,
     atlas,
@@ -53,4 +54,5 @@ api_router.include_router(storage.router)
 api_router.include_router(reports.router)
 api_router.include_router(reports.admin_router)
 api_router.include_router(admin_content.router)
+api_router.include_router(admin_library.router)
 api_router.include_router(admin.router)

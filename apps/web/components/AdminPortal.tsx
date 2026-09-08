@@ -8,10 +8,11 @@ import { AdminInsights } from "./AdminInsights";
 import { AdminPartners } from "./AdminPartners";
 import { AdminUpload } from "./AdminUpload";
 import { AdminContent } from "./AdminContent";
+import { AdminCreate } from "./AdminCreate";
 
 type User = { id: number; email?: string; is_active: boolean; roles: string[] };
 type Res = { id: number; title: string; resource_type: string; rights_status: string; review_status: string; visibility: string; ai_usage_status?: string; read_url?: string | null };
-type TabKey = "content" | "upload" | "manage" | "insights" | "partners";
+type TabKey = "content" | "upload" | "create" | "manage" | "insights" | "partners";
 
 export function AdminPortal() {
   const { session } = useAuth();
@@ -78,6 +79,14 @@ export function AdminPortal() {
       <div className="space-y-6">
         <TabBar tab={tab} setTab={setTab} />
         <AdminUpload />
+      </div>
+    );
+  }
+  if (tab === "create") {
+    return (
+      <div className="space-y-6">
+        <TabBar tab={tab} setTab={setTab} />
+        <AdminCreate />
       </div>
     );
   }
@@ -204,6 +213,7 @@ function TabBar({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
   const tabs: { key: TabKey; label: string }[] = [
     { key: "content", label: "Content & users" },
     { key: "upload", label: "Upload" },
+    { key: "create", label: "Create" },
     { key: "manage", label: "Reviews & reports" },
     { key: "insights", label: "Analytics & audit" },
     { key: "partners", label: "Partnerships" },
