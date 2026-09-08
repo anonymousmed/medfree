@@ -24,8 +24,10 @@ export function AdminCreate() {
   const { session } = useAuth();
   const token = session?.access_token;
   const [kind, setKind] = useState<Kind>("mcq");
+  const [mode, setMode] = useState<"single" | "bulk">("single");
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
+  const [importText, setImportText] = useState("");
 
   // Shared
   const [subject, setSubject] = useState("anatomy");
@@ -131,6 +133,53 @@ export function AdminCreate() {
     }, "Practical created");
   }
 
+  // ----- Bulk import -----
+  const resourceType: Record<Kind, string> = {
+    mcq: "questions", viva: "viva", flashcard: "flashcards", practical: "practicals",
+  };
+
+  const template: Record<Kind, string> = {
+    mcq: JSON.stringify([
+      { subject_slug: "anatomy", topic_slug: "upper-limb", stem: "Which nerve innervates the thenar muscles?", difficulty: "medium", explanation: "Median nerve", is_published: true, options: [ { option_text: "Median nerve", is_correct: true }, { option_text: "Radial nerve", is_correct: false }, { option_text: "Ulnar nerve", is_correct: false } ] },
+    ], null, 2),
+    viva: JSON.stringify([{ subject_slug: "physiology", topic_slug: "cardiac", prompt: "Explain Starling's law of the heart.", model_answer: "…", key_points: "…", difficulty: "medium", is_published: true }], null, 2),
+    flashcard: JSON.stringify([{ subject_slug: "anatomy", topic_slug: "upper-limb", front: "What is the carpal tunnel?", back: "A fibro-osseous canal…", card_type: "basic" }], null, 2),
+    practical: JSON.stringify([{ subject_slug: "anatomy", topic_slug: "upper-limb", title: "Brachial plexus examination", objective: "…", is_published: true, steps: [ { step_text: "Inspect the shoulder" }, { step_text: "Test thenar muscles" } ] }], null, 2),
+  };
+
+  async function runImport() {
+    let items: unknown;
+    try {
+      items = JSON.parse(importText);
+    } catch {
+      return setMsg({ type: "err", text: "Invalid JSON. Paste a JSON array (see template)." });
+    }
+    if (!Array.isArray(items)) return setMsg({ type: "err", text: "JSON must be an array of items." });
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/content/import", {
+        method: "POST", headers: headers(),
+        body: JSON.stringify({ resource_type: resourceType[kind], items }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail ?? res.statusText);
+      setMsg({ type: "ok", text: `Imported ${data.created} ${resourceType[kind]}. Skipped ${data.skipped} invalid. (ids: ${data.ids?.length ?? 0})` });
+      setImportText("");
+    } catch (e: any) {
+      setMsg({ type: "err", text: e?.message ?? "Import failed." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onImportFile(f: File | undefined) {
+    if (!f) return;
+    const text = await f.text();
+    setImportText(text);
+    setMsg(null);
+  }
+
   if (!token) return <Card className="p-6 text-center text-ink-2">Sign in with an admin account to create content.</Card>;
 
   const setOpt = (i: number, patch: Partial<Option>) =>
@@ -140,7 +189,7 @@ export function AdminCreate() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading eyebrow="Admin authoring" title="Create content" subtitle="Add MCQs, viva questions, flashcards and practicals directly. Images upload via the Upload tab." />
+      <SectionHeading eyebrow="Admin authoring" title="Create content" subtitle="Add MCQs, viva questions, flashcards and practicals — one at a time, or bulk import many at once." />
 
       <div className="flex flex-wrap gap-2">
         {KINDS.map((k) => (
@@ -151,8 +200,53 @@ export function AdminCreate() {
         ))}
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {(["single", "bulk"] as const).map((m) => (
+          <button key={m} onClick={() => { setMode(m); setMsg(null); }}
+            className={`rounded-xl px-4 py-2 text-sm font-medium ${mode === m ? "bg-accent text-white" : "border border-surface-2 text-ink-2 hover:border-accent/40"}`}>
+            {m === "single" ? "Add one" : "Bulk import"}
+          </button>
+        ))}
+        {mode === "bulk" && (
+          <button onClick={() => { setImportText(template[kind]); setMsg(null); }}
+            className="rounded-xl border border-accent/40 px-4 py-2 text-sm text-accent hover:bg-accent/10">
+            Load template
+          </button>
+        )}
+      </div>
+
       {msg && <p className={`text-sm ${msg.type === "ok" ? "text-accent" : "text-red-400"}`}>{msg.text}</p>}
 
+      {mode === "bulk" && (
+        <Card className="space-y-4 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Bulk import {resourceType[kind]}</p>
+              <p className="text-xs text-ink-3">
+                Paste a JSON array below (or drop a .json file). Each item uses the same fields as
+                the single form. Invalid items are skipped and reported. Supports up to 2,000 items.
+              </p>
+            </div>
+            <Badge color="accent">{resourceType[kind]}</Badge>
+          </div>
+          <label className={label}>
+            Paste JSON array
+            <textarea value={importText} onChange={(e) => setImportText(e.target.value)} rows={14} spellCheck={false}
+              className="mt-1 w-full rounded-xl border border-surface-2 bg-surface-1 px-3 py-2 font-mono text-xs focus:border-accent focus:outline-none"
+              placeholder={template[kind]} />
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={runImport} disabled={busy}>{busy ? "Importing…" : `Import ${resourceType[kind]}`}</Button>
+            <label className="cursor-pointer rounded-xl border border-surface-2 px-4 py-2 text-sm font-medium text-ink-2 hover:border-accent/40">
+              Upload .json file
+              <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => onImportFile(e.target.files?.[0])} />
+            </label>
+          </div>
+        </Card>
+      )}
+
+      {mode === "single" && (
+        <>
       {/* Subject / topic / published — shared */}
       <Card className="p-5">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -318,6 +412,8 @@ export function AdminCreate() {
           </div>
           <Button onClick={submitPractical} disabled={busy}>{busy ? "Creating…" : "Create practical"}</Button>
         </Card>
+      )}
+        </>
       )}
     </div>
   );

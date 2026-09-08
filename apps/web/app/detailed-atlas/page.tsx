@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, SectionHeading } from "@medfree/ui";
+import { DetailedAtlasViewer } from "./viewer";
 
 // The ashemag/human-atlas demo is an MIT-licensed app over CC BY 4.0 BodyParts3D
 // anatomy data. MEDFREE embeds/link-outs to it as a legally permitted external
@@ -65,17 +66,10 @@ export default function DetailedAtlasPage() {
         </p>
       </div>
 
-      {/* Embedded live viewer (works in a full browser). In restricted/offline
-          previews it shows the framing shell; use the button to open it directly. */}
-      <div className="overflow-hidden rounded-xl border border-ink-2/15 bg-bg-2/40">
-        <iframe
-          src={DETAILED_ATLAS_URL}
-          title="Detailed Human Atlas"
-          className="h-[70vh] w-full"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-          loading="lazy"
-        />
-      </div>
+      {/* Embedded live viewer with fullscreen + tall-view controls. In
+          restricted/offline previews it shows the shell; use the external
+          button above to open it directly. */}
+      <DetailedAtlasViewer />
     </div>
   );
 }

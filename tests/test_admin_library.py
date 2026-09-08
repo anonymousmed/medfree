@@ -84,3 +84,60 @@ async def test_admin_creates_viva_flashcard_practical(client, auth_headers):
     )
     assert p.status_code == 201, p.text
     assert len(p.json()["steps"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_bulk_import_flashcards(client, auth_headers):
+    resp = await client.post(
+        "/api/admin/content/import",
+        json={
+            "resource_type": "flashcards",
+            "items": [
+                {"subject_slug": "anatomy", "front": "f1", "back": "b1"},
+                {"subject_slug": "anatomy", "front": "f2", "back": "b2"},
+                {"subject_slug": "anatomy", "front": "f3", "back": "b3"},
+            ],
+        },
+        headers=auth_headers("super_admin"),
+    )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["created"] == 3
+    assert data["skipped"] == 0
+    assert len(data["ids"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_bulk_import_skips_invalid(client, auth_headers):
+    resp = await client.post(
+        "/api/admin/content/import",
+        json={
+            "resource_type": "questions",
+            "items": [
+                {
+                    "subject_slug": "anatomy",
+                    "stem": "Valid question",
+                    "options": [
+                        {"option_text": "a", "is_correct": True},
+                        {"option_text": "b", "is_correct": False},
+                    ],
+                },
+                {"subject_slug": "anatomy", "stem": "missing options"},  # invalid
+            ],
+        },
+        headers=auth_headers("super_admin"),
+    )
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["created"] == 1
+    assert data["skipped"] == 1
+
+
+@pytest.mark.asyncio
+async def test_bulk_import_non_admin_forbidden(client, auth_headers):
+    resp = await client.post(
+        "/api/admin/content/import",
+        json={"resource_type": "flashcards", "items": [{"subject_slug": "anatomy", "front": "f", "back": "b"}]},
+        headers=auth_headers("student"),
+    )
+    assert resp.status_code == 403, resp.text
