@@ -104,7 +104,10 @@ async def set_user_role(
         await record_audit(
             session,
             action="user.role_change",
-            actor_id=getattr(token, "sub", None),
+            # ``audit_logs.actor_id`` is an INTEGER FK to users.id; use the local
+            # user's integer id. ``token.sub`` is the Supabase UUID and would
+            # raise a DB error if passed here.
+            actor_id=user.id,
             actor_email=token.email,
             target_type="user",
             target_id=user_id,
@@ -112,6 +115,10 @@ async def set_user_role(
             ip_address=client_ip(request),
         )
         await session.commit()
+        # The dependency session uses expire_on_commit=False, so the just-added
+        # role is not visible on the cached User. Expire + reload to return the
+        # updated role list in the response.
+        session.expire_all()
         user = (
             await session.execute(select(User).options(selectinload(User.roles)).where(User.id == user_id))
         ).scalar_one()
