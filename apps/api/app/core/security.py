@@ -110,7 +110,11 @@ async def record_audit(
     )
 
 
-def client_ip(request: Request) -> str | None:
+def client_ip(request: Request | None) -> str | None:
+    # Guard against a missing/None request object (e.g. handlers declared with
+    # ``request: Request = None`` that may not always be injected). Never raise.
+    if request is None:
+        return None
     if request.client:
         return request.client.host
     return None
